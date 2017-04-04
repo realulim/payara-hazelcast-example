@@ -1,30 +1,35 @@
 package de.mayring.payarahazelcastexample;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
-import javax.annotation.PostConstruct;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
 import fish.payara.micro.PayaraMicro;
 import fish.payara.micro.PayaraMicroRuntime;
 
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IList;
+
 @ApplicationPath("/")
 public class ApplicationConfig extends Application {
 
-    private static final List<String> colors = Arrays.asList(new String[] { "Fuchsia", "Teal", "Lime", "Blue", "Black" }); 
+    private final IList<String> colors;
 
-    public ApplicationConfig() {
+    public ApplicationConfig() throws NamingException {
+        javax.naming.Context ctx = new InitialContext();
+        HazelcastInstance hazelcast = (HazelcastInstance) ctx.lookup("payara/Hazelcast");
+        colors = hazelcast.getList("colors");
+        colors.add("Fuchsia");
+        colors.add("Teal");
+        colors.add("Lime");
+        colors.add("Blue");
+        colors.add("Black");
     }
 
-    static String getColor() {
-        return colors.get(ThreadLocalRandom.current().nextInt(0, colors.size()));
-    }
-
-    @PostConstruct
+    @javax.annotation.PostConstruct
     public void configurePayara() {
         final PayaraMicroRuntime pmRuntime = PayaraMicro.getInstance().getRuntime();
         pmRuntime.run("healthcheck-configure", "--enabled=true", "--dynamic=true");
