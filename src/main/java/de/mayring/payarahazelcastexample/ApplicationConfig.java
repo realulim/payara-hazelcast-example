@@ -1,6 +1,9 @@
 package de.mayring.payarahazelcastexample;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.annotation.PostConstruct;
 import javax.ws.rs.ApplicationPath;
@@ -11,6 +14,15 @@ import fish.payara.micro.PayaraMicroRuntime;
 
 @ApplicationPath("/")
 public class ApplicationConfig extends Application {
+
+    private static final List<String> colors = Arrays.asList(new String[] { "Fuchsia", "Teal", "Lime", "Blue", "Black" }); 
+
+    public ApplicationConfig() {
+    }
+
+    static String getColor() {
+        return colors.get(ThreadLocalRandom.current().nextInt(0, colors.size()));
+    }
 
     @PostConstruct
     public void configurePayara() {
