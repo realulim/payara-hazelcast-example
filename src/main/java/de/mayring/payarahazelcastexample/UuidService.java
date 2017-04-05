@@ -20,22 +20,20 @@ import com.hazelcast.core.IMap;
 @Path("uuid")
 public class UuidService {
 
-    private final HazelcastInstance hazelcast;
-    private final IMap<String, String> colorsInUse;
     private final String color;
 
     @Context UriInfo uriInfo;
 
-    private final String outputOnGet = "<html><h2 style='color:%1$s; font-family: sans-serif'>%2$s</h2>" +
+    private final String outputOnGet = "<html><h1 style='color:%1$s; font-family: sans-serif'>%2$s</h1>" +
             "<form action='%3$s' method='POST'><input type='submit' value='store'><input type='hidden' name='color' value='%1$s'></form></html>";
 
-    private final String outputOnPost = "<html><h2 style='color:%1$s; font-family: sans-serif'>%2$s stored.</h2>" +
+    private final String outputOnPost = "<html><h1 style='color:%1$s; font-family: sans-serif'>%2$s stored.</h1>" +
             "<a href='%3$s'>continue</a></html>";
 
     public UuidService() throws NamingException {
         javax.naming.Context ctx = new InitialContext();
-        hazelcast = (HazelcastInstance) ctx.lookup("payara/Hazelcast");
-        colorsInUse = hazelcast.getMap(ApplicationConfig.COLORS);
+        HazelcastInstance hazelcast = (HazelcastInstance) ctx.lookup("payara/Hazelcast");
+        IMap<String, String> colorsInUse = hazelcast.getMap(ApplicationConfig.COLORS);
         this.color = colorsInUse.get(hazelcast.getCluster().getLocalMember().getUuid());
     }
 
