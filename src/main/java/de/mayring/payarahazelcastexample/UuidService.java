@@ -1,7 +1,6 @@
 package de.mayring.payarahazelcastexample;
 
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -16,12 +15,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IList;
+import com.hazelcast.core.IMap;
 
 @Path("uuid")
 public class UuidService {
 
     private final HazelcastInstance hazelcast;
+    private final IMap<String, String> colorsInUse;
+    private final String color;
 
     @Context UriInfo uriInfo;
 
@@ -34,14 +35,15 @@ public class UuidService {
     public UuidService() throws NamingException {
         javax.naming.Context ctx = new InitialContext();
         hazelcast = (HazelcastInstance) ctx.lookup("payara/Hazelcast");
+        colorsInUse = hazelcast.getMap(ApplicationConfig.COLORS);
+        this.color = colorsInUse.get(hazelcast.getCluster().getLocalMember().getUuid());
     }
 
     @GET
     @Produces(MediaType.TEXT_HTML)
     public String getRandom() {
         String uuid = UUID.randomUUID().toString();
-        String color = getRandomColor();
-        return String.format(outputOnGet, color, uuid, uriInfo.getAbsolutePath().toString() + "/" + uuid);
+        return String.format(outputOnGet, this.color, uuid, uriInfo.getAbsolutePath().toString() + "/" + uuid);
     }
 
     @POST
@@ -51,11 +53,6 @@ public class UuidService {
         String uri = uriInfo.getAbsolutePath().toString();
         int end = uri.length() - (uuidToStore.length() + 1);
         return String.format(outputOnPost, color, uuidToStore, uri.substring(0, end));
-    }
-
-    private String getRandomColor() {
-        IList<String> colors = hazelcast.getList("colors");
-        return colors.get(ThreadLocalRandom.current().nextInt(0, colors.size()));
     }
 
 }
