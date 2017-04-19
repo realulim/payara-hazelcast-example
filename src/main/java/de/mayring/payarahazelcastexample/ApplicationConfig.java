@@ -1,12 +1,16 @@
 package de.mayring.payarahazelcastexample;
 
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
+
+import fish.payara.micro.PayaraMicro;
+import fish.payara.micro.PayaraMicroRuntime;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -30,7 +34,10 @@ public class ApplicationConfig extends Application {
 
     @PostConstruct
     public void configurePayara() {
-        // not working in Payara 4.1.1.171.1
+// not working:
+//        final PayaraMicroRuntime pmRuntime = PayaraMicro.getInstance().getRuntime();
+//        pmRuntime.run("set-hazelcast-configuration", "--enabled=true", "-f /opt/hazelcast.xml", "--dynamic=true");
+        Logger.getAnonymousLogger().info("Application configured");
     }
 
     @Override
