@@ -6,4 +6,4 @@
 #healthcheck-configure-service-threshold --serviceName=healthcheck-machinemem --thresholdCritical=90 --thresholdWarning=50 --thresholdGood=0 --dynamic=true
 
 # configure Hazelcast (not working)
-#set-hazelcast-configuration --enabled=true -f hazelcast-config.xml --startport=8084 -j payara/Hazelcast
+#set-hazelcast-configuration --enabled=true -f hazelcast-config.xml --startport=8084 -j payara/Hazelcast --dynamic=true
