@@ -1,6 +1,6 @@
 package de.mayring.payarahazelcastexample;
 
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -23,7 +23,7 @@ import com.hazelcast.core.IMap;
 public class UuidService {
 
     private String color = null;
-    private List<String> storedData = null;
+    private Map<String, String> storedData = null;
 
     @Context UriInfo uriInfo;
 
@@ -38,8 +38,8 @@ public class UuidService {
         StringBuilder sb = new StringBuilder("");
         if (storedData != null) {
             sb.append("<ol>");
-            for (String data : storedData) {
-                sb.append("<li>").append(data).append("</li>");
+            for (Map.Entry<String, String> entry : storedData.entrySet()) {
+                sb.append("<li style='color:" + entry.getValue() + "'>").append(entry.getKey()).append("</li>");
             }
             sb.append("</ol>");
         }
@@ -64,7 +64,7 @@ public class UuidService {
         else {
             IMap<String, String> colorsInUse = hazelcast.getMap(ApplicationConfig.COLORS);
             this.color = colorsInUse.get(hazelcast.getCluster().getLocalMember().getUuid());
-            this.storedData = hazelcast.getList(ApplicationConfig.STORED);
+            this.storedData = hazelcast.getMap(ApplicationConfig.STORED);
         }
     }
 
@@ -90,7 +90,7 @@ public class UuidService {
     @Path("{uuidToSave}")
     @Produces(MediaType.TEXT_HTML)
     public String store(@PathParam("uuidToSave") String uuidToStore, @FormParam("color") final String color) {
-        this.storedData.add(uuidToStore);
+        this.storedData.put(uuidToStore, color);
         Logger.getAnonymousLogger().info("Stored " + uuidToStore + ". New size: " + storedData.size());
         String uri = uriInfo.getAbsolutePath().toString();
         int end = uri.length() - (uuidToStore.length() + 1);
