@@ -19,6 +19,7 @@ import com.nurkiewicz.asyncretry.RetryExecutor;
 @ApplicationPath("/")
 public class ApplicationConfig extends Application {
 
+    public static String HAZELCAST = "payara/Hazelcast";
     public static String COLORS = "colors";
     public static String STORED = "StoredData";
     private static HazelcastInstance hazelcast = null;
@@ -33,7 +34,7 @@ public class ApplicationConfig extends Application {
 
         final CompletableFuture<HazelcastInstance> future = executor.getWithRetry(() -> {
             javax.naming.Context ctx = new InitialContext();
-            return (HazelcastInstance) ctx.lookup("payara/Hazelcast");
+            return (HazelcastInstance) ctx.lookup(HAZELCAST);
         });
 
         future.thenAccept((HazelcastInstance hz) -> {
