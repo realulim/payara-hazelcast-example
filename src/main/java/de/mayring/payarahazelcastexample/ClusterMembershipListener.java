@@ -7,11 +7,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.InitialMembershipEvent;
+import com.hazelcast.core.InitialMembershipListener;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
-import com.hazelcast.core.MembershipListener;
 
-public class ClusterMembershipListener implements MembershipListener {
+public class ClusterMembershipListener implements InitialMembershipListener {
 
     private final List<String> allColors;
     private final String defaultColor = "LightSalmon";
@@ -20,6 +21,12 @@ public class ClusterMembershipListener implements MembershipListener {
     public ClusterMembershipListener(IMap<String, String> colorsInUse) {
         allColors = Arrays.asList(new String[] { "Crimson", "LightSeaGreen", "Gold", "RoyalBlue", "Black" });
         this.colorsInUse = colorsInUse;
+    }
+
+    @Override
+    public void init(InitialMembershipEvent initialMembershipEvent) {
+        // we need to initialise ourself as a new member
+        initialiseNewMember(initialMembershipEvent.getCluster().getLocalMember().getUuid());
     }
 
     @Override

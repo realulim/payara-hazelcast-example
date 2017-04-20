@@ -43,8 +43,6 @@ public class ApplicationConfig extends Application {
             ClusterMembershipListener listener = new ClusterMembershipListener(colorsInUse);
             hz.getCluster().addMembershipListener(listener);
 
-            // we need to initialise the first member seperately, because the Listener just started and missed the first event
-            listener.initialiseNewMember(hz.getCluster().getLocalMember().getUuid());
             ApplicationConfig.hazelcast = hz;
         });
     }
