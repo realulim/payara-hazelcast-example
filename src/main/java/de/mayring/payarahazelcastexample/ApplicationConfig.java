@@ -9,9 +9,6 @@ import javax.naming.NamingException;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
-import fish.payara.micro.PayaraMicro;
-import fish.payara.micro.PayaraMicroRuntime;
-
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
