@@ -28,8 +28,9 @@ public class ClusterMembershipListener implements MembershipListener {
     }
 
     public void initialiseNewMember(String uuid) {
-        String colorToAdd = getUnusedColor(colorsInUse);
+        String colorToAdd = getUnusedColor();
         String assignedColor = colorsInUse.putIfAbsent(uuid, colorToAdd);
+        Logger.getAnonymousLogger().info("Member " + uuid + " added. Colors in use: " + colorsInUse.size());
         if (assignedColor == null) {
             Logger.getAnonymousLogger().info("Color " + colorToAdd + " assigned to new Member " + uuid);
         }
@@ -42,6 +43,7 @@ public class ClusterMembershipListener implements MembershipListener {
     public void memberRemoved(MembershipEvent membershipEvent) {
         String uuidToRemove = membershipEvent.getMember().getUuid();
         colorsInUse.remove(uuidToRemove);
+        Logger.getAnonymousLogger().info("Member " + uuidToRemove + " removed. Colors in use: " + colorsInUse.size());
     }
 
     @Override
@@ -49,7 +51,8 @@ public class ClusterMembershipListener implements MembershipListener {
         // System.err.println("Member attribute changed: " + memberAttributeEvent);
     }
 
-    private String getUnusedColor(IMap<String, String> colorsInUse) {
+    private String getUnusedColor() {
+        Logger.getAnonymousLogger().info("Colors in use: " + colorsInUse.size() + " of " + allColors.size());
         if (colorsInUse.size() >= allColors.size()) {
             // all predefined colors are taken, so for any overflow nodes let's use the default color
             return defaultColor;

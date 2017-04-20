@@ -1,17 +1,18 @@
 package de.mayring.payarahazelcastexample;
 
 import java.util.UUID;
+import java.util.logging.Logger;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.hazelcast.core.HazelcastInstance;
@@ -20,7 +21,7 @@ import com.hazelcast.core.IMap;
 @Path("uuid")
 public class UuidService {
 
-    private final String color;
+    private String color = null;
 
     @Context UriInfo uriInfo;
 
@@ -30,11 +31,15 @@ public class UuidService {
     private final String outputOnPost = "<html><h1 style='color:%1$s; font-family: sans-serif'>%2$s stored.</h1>" +
             "<a href='%3$s'>continue</a></html>";
 
-    public UuidService() throws NamingException {
-        javax.naming.Context ctx = new InitialContext();
-        HazelcastInstance hazelcast = (HazelcastInstance) ctx.lookup("payara/Hazelcast");
-        IMap<String, String> colorsInUse = hazelcast.getMap(ApplicationConfig.COLORS);
-        this.color = colorsInUse.get(hazelcast.getCluster().getLocalMember().getUuid());
+    public UuidService() {
+        HazelcastInstance hazelcast = ApplicationConfig.getHazelcast();
+        if (hazelcast == null) {
+            throw new WebApplicationException("Hazelcast not initialised yet", Response.Status.INTERNAL_SERVER_ERROR);
+        }
+        else {
+            IMap<String, String> colorsInUse = hazelcast.getMap(ApplicationConfig.COLORS);
+            this.color = colorsInUse.get(hazelcast.getCluster().getLocalMember().getUuid());
+        }
     }
 
     @GET

@@ -1,9 +1,11 @@
 package de.mayring.payarahazelcastexample;
 
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
 
-import javax.annotation.PostConstruct;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.ws.rs.ApplicationPath;
@@ -11,30 +13,43 @@ import javax.ws.rs.core.Application;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.nurkiewicz.asyncretry.AsyncRetryExecutor;
+import com.nurkiewicz.asyncretry.RetryExecutor;
 
 @ApplicationPath("/")
 public class ApplicationConfig extends Application {
 
     public static String COLORS = "colors";
+    private static HazelcastInstance hazelcast = null;
 
-    public ApplicationConfig() throws NamingException {
-        javax.naming.Context ctx = new InitialContext();
-        HazelcastInstance hazelcast = (HazelcastInstance) ctx.lookup("payara/Hazelcast");
-        IMap<String, String> colorsInUse = hazelcast.getMap(COLORS);
+    public ApplicationConfig() {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        RetryExecutor executor = new AsyncRetryExecutor(scheduler).
+                retryOn(NamingException.class).
+                withExponentialBackoff(500, 2). // start with a delay of 500ms and double delay after each retry
+                withMaxDelay(10000). // maximum delay should be 10 seconds
+                withUniformJitter(); // add between +/- 100 ms randomly
 
-        ClusterMembershipListener listener = new ClusterMembershipListener(colorsInUse);
-        hazelcast.getCluster().addMembershipListener(listener);
-        
-        // we need to initialise the first member seperately, because the Listener just started and missed the first event
-        listener.initialiseNewMember(hazelcast.getCluster().getLocalMember().getUuid());
+        final CompletableFuture<HazelcastInstance> future = executor.getWithRetry(() -> {
+            javax.naming.Context ctx = new InitialContext();
+            return (HazelcastInstance) ctx.lookup("payara/Hazelcast");
+        });
+
+        future.thenAccept((HazelcastInstance hz) -> {
+            Logger.getAnonymousLogger().info("Connected to the Cluster!");
+            IMap<String, String> colorsInUse = hz.getMap(COLORS);
+
+            ClusterMembershipListener listener = new ClusterMembershipListener(colorsInUse);
+            hz.getCluster().addMembershipListener(listener);
+
+            // we need to initialise the first member seperately, because the Listener just started and missed the first event
+            listener.initialiseNewMember(hz.getCluster().getLocalMember().getUuid());
+            ApplicationConfig.hazelcast = hz;
+        });
     }
 
-    @PostConstruct
-    public void configurePayara() {
-// not working:
-//        final PayaraMicroRuntime pmRuntime = PayaraMicro.getInstance().getRuntime();
-//        pmRuntime.run("set-hazelcast-configuration", "--enabled=true", "-f /opt/hazelcast.xml", "--dynamic=true");
-        Logger.getAnonymousLogger().info("Application configured");
+    public static HazelcastInstance getHazelcast() {
+        return hazelcast;
     }
 
     @Override
