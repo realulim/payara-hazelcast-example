@@ -20,6 +20,7 @@ import com.nurkiewicz.asyncretry.RetryExecutor;
 public class ApplicationConfig extends Application {
 
     public static String COLORS = "colors";
+    public static String STORED = "StoredData";
     private static HazelcastInstance hazelcast = null;
 
     public ApplicationConfig() {

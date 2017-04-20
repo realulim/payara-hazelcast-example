@@ -1,5 +1,6 @@
 package de.mayring.payarahazelcastexample;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -22,14 +23,38 @@ import com.hazelcast.core.IMap;
 public class UuidService {
 
     private String color = null;
+    private List<String> storedData = null;
 
     @Context UriInfo uriInfo;
 
-    private final String outputOnGet = "<html><h1 style='color:%1$s; font-family: sans-serif'>%2$s</h1>" +
-            "<form action='%3$s' method='POST'><input type='submit' value='store'><input type='hidden' name='color' value='%1$s'></form></html>";
+    private String responseForGet(String color, String uuid, String uriStore, String uriPurge) {
+        return "<html><h1 style='color:" + color + "; font-family: sans-serif'>" + uuid + "</h1>" +
+            "<form action='" + uriStore + "' method='POST'><input type='submit' value='store'><input type='hidden' name='color' value='" + color + "'></form>" +
+            "<form action='" + uriPurge + "' method='POST'><input type='submit' value='purge'></form>" +
+            getStoredData() + "</html>";
+    }
 
-    private final String outputOnPost = "<html><h1 style='color:%1$s; font-family: sans-serif'>%2$s stored.</h1>" +
-            "<a href='%3$s'>continue</a></html>";
+    private String getStoredData() {
+        StringBuilder sb = new StringBuilder("");
+        if (storedData != null) {
+            sb.append("<ol>");
+            for (String data : storedData) {
+                sb.append("<li>").append(data).append("</li>");
+            }
+            sb.append("</ol>");
+        }
+        return sb.toString();
+    }
+
+    private String responseForStore(String color, String uuid, String uri) {
+        return "<html><h1 style='color:" + color + "; font-family: sans-serif'>" + uuid + " stored.</h1>" +
+            "<a href='" + uri + "'>continue</a>" + getStoredData() + "</html>";
+    }
+
+    private String responseForPurge(String color, String uri) {
+        return "<html><h1 style='color:" + color + "; font-family: sans-serif'>Purged.</h1>" +
+            "<a href='" + uri + "'>continue</a>" + getStoredData() + "</html>";
+    }
 
     public UuidService() {
         HazelcastInstance hazelcast = ApplicationConfig.getHazelcast();
@@ -39,6 +64,7 @@ public class UuidService {
         else {
             IMap<String, String> colorsInUse = hazelcast.getMap(ApplicationConfig.COLORS);
             this.color = colorsInUse.get(hazelcast.getCluster().getLocalMember().getUuid());
+            this.storedData = hazelcast.getList(ApplicationConfig.STORED);
         }
     }
 
@@ -46,16 +72,29 @@ public class UuidService {
     @Produces(MediaType.TEXT_HTML)
     public String getRandom() {
         String uuid = UUID.randomUUID().toString();
-        return String.format(outputOnGet, this.color, uuid, uriInfo.getAbsolutePath().toString() + "/" + uuid);
+        String uri = uriInfo.getAbsolutePath().toString();
+        return responseForGet(this.color, uuid, uri + "/" + uuid, uri + "/purge");
+    }
+
+    @POST
+    @Path("/purge")
+    @Produces(MediaType.TEXT_HTML)
+    public String purge() {
+        this.storedData.clear();
+        Logger.getAnonymousLogger().info("Purged.");
+        String uri = uriInfo.getAbsolutePath().toString();
+        return responseForPurge(color, uri.substring(0, uri.length() - 6));
     }
 
     @POST
     @Path("{uuidToSave}")
     @Produces(MediaType.TEXT_HTML)
-    public String save(@PathParam("uuidToSave") String uuidToStore, @FormParam("color") final String color) {
+    public String store(@PathParam("uuidToSave") String uuidToStore, @FormParam("color") final String color) {
+        this.storedData.add(uuidToStore);
+        Logger.getAnonymousLogger().info("Stored " + uuidToStore + ". New size: " + storedData.size());
         String uri = uriInfo.getAbsolutePath().toString();
         int end = uri.length() - (uuidToStore.length() + 1);
-        return String.format(outputOnPost, color, uuidToStore, uri.substring(0, end));
+        return responseForStore(color, uuidToStore, uri.substring(0, end));
     }
 
 }
