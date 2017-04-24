@@ -49,7 +49,18 @@ public class ApplicationConfig extends Application {
     }
 
     public static HazelcastInstance getHazelcast() {
-        return hazelcast;
+        if (hazelcast != null && hazelcast.getLifecycleService().isRunning()) {
+            return hazelcast;
+        } 
+        else {
+            try {
+                javax.naming.Context ctx = new InitialContext();
+                return (HazelcastInstance) ctx.lookup("payara/Hazelcast");
+            }
+            catch (NamingException ex) {
+                return null;
+            }
+        }
     }
 
     @Override
