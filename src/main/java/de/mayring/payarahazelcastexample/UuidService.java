@@ -83,7 +83,7 @@ public class UuidService {
         this.storedData.clear();
         Logger.getAnonymousLogger().info("Purged.");
         String uri = uriInfo.getAbsolutePath().toString();
-        return responseForPurge(color, uri.substring(0, uri.length() - 6));
+        return responseForPurge(this.color, uri.substring(0, uri.length() - 6));
     }
 
     @POST

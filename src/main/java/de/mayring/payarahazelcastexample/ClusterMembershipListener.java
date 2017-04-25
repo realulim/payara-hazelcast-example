@@ -1,36 +1,75 @@
 package de.mayring.payarahazelcastexample;
 
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.ejb.Singleton;
+import javax.ejb.Startup;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.InitialMembershipEvent;
 import com.hazelcast.core.InitialMembershipListener;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
+import com.nurkiewicz.asyncretry.AsyncRetryExecutor;
+import com.nurkiewicz.asyncretry.RetryExecutor;
 
+import static de.mayring.payarahazelcastexample.ApplicationConfig.COLORS;
+import static de.mayring.payarahazelcastexample.ApplicationConfig.HAZELCAST;
+
+@Startup
+@Singleton
 public class ClusterMembershipListener implements InitialMembershipListener {
 
     private final List<String> allColors;
     private final String defaultColor = "LightSalmon";
-    private final IMap<String, String> colorsInUse;
+    private IMap<String, String> colorsInUse = null;
 
-    public ClusterMembershipListener(IMap<String, String> colorsInUse) {
+    public ClusterMembershipListener() {
         allColors = Arrays.asList(new String[] { "Crimson", "LightSeaGreen", "Gold", "RoyalBlue", "Black" });
-        this.colorsInUse = colorsInUse;
+    }
+
+    @PostConstruct
+    private void startup() {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        RetryExecutor executor = new AsyncRetryExecutor(scheduler).
+                retryOn(NamingException.class).
+                withExponentialBackoff(500, 2). // start with a delay of 500ms and double delay after each retry
+                withMaxDelay(10000). // maximum delay should be 10 seconds
+                withUniformJitter(); // add between +/- 100 ms randomly
+
+        final CompletableFuture<HazelcastInstance> future = executor.getWithRetry(() -> {
+            javax.naming.Context ctx = new InitialContext();
+            return (HazelcastInstance) ctx.lookup(HAZELCAST);
+        });
+
+        future.thenAccept((HazelcastInstance hz) -> {
+            colorsInUse = hz.getMap(COLORS);
+            hz.getCluster().addMembershipListener(this);
+        });
     }
 
     @Override
     public void init(InitialMembershipEvent initialMembershipEvent) {
         // we need to initialise ourself as a new member
+        Logger.getAnonymousLogger().info("Initialising new Member...");
         initialiseNewMember(initialMembershipEvent.getCluster().getLocalMember().getUuid());
     }
 
     @Override
     public void memberAdded(MembershipEvent membershipEvent) {
+        Logger.getAnonymousLogger().info("Adding new Member...");
         initialiseNewMember(membershipEvent.getMember().getUuid());
     }
 
