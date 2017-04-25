@@ -55,7 +55,7 @@ public class ApplicationConfig extends Application {
         else {
             try {
                 javax.naming.Context ctx = new InitialContext();
-                return (HazelcastInstance) ctx.lookup("payara/Hazelcast");
+                return (HazelcastInstance) ctx.lookup(HAZELCAST);
             }
             catch (NamingException ex) {
                 return null;
