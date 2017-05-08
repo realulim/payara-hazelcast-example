@@ -41,6 +41,7 @@ public class ApplicationConfig extends Application {
     @Override
     public Set<Class<?>> getClasses() {
         Set<Class<?>> resources = new HashSet<>();
+        resources.add(de.mayring.payarahazelcastexample.HealthCheck.class);
         resources.add(de.mayring.payarahazelcastexample.UuidService.class);
         return resources;
     }
