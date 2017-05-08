@@ -1,7 +1,9 @@
 package de.mayring.payarahazelcastexample;
 
+import java.util.HashSet;
 import java.util.Set;
 
+import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.ws.rs.ApplicationPath;
@@ -26,7 +28,7 @@ public class ApplicationConfig extends Application {
         } 
         else {
             try {
-                javax.naming.Context ctx = new InitialContext();
+                Context ctx = new InitialContext();
                 hazelcast = (HazelcastInstance) ctx.lookup(HAZELCAST);
                 return hazelcast;
             }
@@ -38,18 +40,9 @@ public class ApplicationConfig extends Application {
 
     @Override
     public Set<Class<?>> getClasses() {
-        Set<Class<?>> resources = new java.util.HashSet<>();
-        addRestResourceClasses(resources);
-        return resources;
-    }
-
-    /**
-     * Do not modify addRestResourceClasses() method. It is automatically
-     * populated with all resources defined in the project. If required, comment
-     * out calling this method in getClasses().
-     */
-    private void addRestResourceClasses(Set<Class<?>> resources) {
+        Set<Class<?>> resources = new HashSet<>();
         resources.add(de.mayring.payarahazelcastexample.UuidService.class);
+        return resources;
     }
 
 }
