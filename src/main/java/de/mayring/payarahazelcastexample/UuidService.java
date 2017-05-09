@@ -39,7 +39,7 @@ public class UuidService {
         if (storedData != null) {
             sb.append("<ol>");
             for (Map.Entry<String, String> entry : storedData.entrySet()) {
-                sb.append("<li style='color:" + entry.getValue() + "'>").append(entry.getKey()).append("</li>");
+                sb.append("<li style='color:").append(entry.getValue()).append("'>").append(entry.getKey()).append("</li>");
             }
             sb.append("</ol>");
         }
@@ -72,7 +72,7 @@ public class UuidService {
     @Produces(MediaType.TEXT_HTML)
     public String getRandom() {
         String uuid = UUID.randomUUID().toString();
-        String uri = uriInfo.getAbsolutePath().toString();
+        String uri = "/" + uriInfo.getPath();
         return responseForGet(this.color, uuid, uri + "/" + uuid, uri + "/purge");
     }
 
@@ -82,7 +82,7 @@ public class UuidService {
     public String purge() {
         this.storedData.clear();
         Logger.getAnonymousLogger().info("Purged.");
-        String uri = uriInfo.getAbsolutePath().toString();
+        String uri = "/" + uriInfo.getPath();
         return responseForPurge(this.color, uri.substring(0, uri.length() - 6));
     }
 
@@ -92,7 +92,7 @@ public class UuidService {
     public String store(@PathParam("uuidToSave") String uuidToStore, @FormParam("color") final String color) {
         this.storedData.put(uuidToStore, color);
         Logger.getAnonymousLogger().info("Stored " + uuidToStore + ". New size: " + storedData.size());
-        String uri = uriInfo.getAbsolutePath().toString();
+        String uri = "/" + uriInfo.getPath();
         int end = uri.length() - (uuidToStore.length() + 1);
         return responseForStore(color, uuidToStore, uri.substring(0, end));
     }
