@@ -26,9 +26,11 @@ public class UuidService {
     private Map<String, String> storedData = null;
 
     @Context UriInfo uriInfo;
+    private static int requests = 0;
 
     private String responseForGet(String color, String uuid, String uriStore, String uriPurge) {
-        return "<html><h1 style='color:" + color + "; font-family: sans-serif'>" + uuid + "</h1>" +
+        return "<html><sup>Requests: " + requests + "</sup>" +
+            "<h1 style='color:" + color + "; font-family: sans-serif'>" + uuid + "</h1>" +
             "<form action='" + uriStore + "' method='POST'><input type='submit' value='store'><input type='hidden' name='color' value='" + color + "'></form>" +
             "<form action='" + uriPurge + "' method='POST'><input type='submit' value='purge'></form>" +
             getStoredData() + "</html>";
@@ -73,6 +75,7 @@ public class UuidService {
     public String getRandom() {
         String uuid = UUID.randomUUID().toString();
         String uri = "/" + uriInfo.getPath();
+        requests++;
         return responseForGet(this.color, uuid, uri + "/" + uuid, uri + "/purge");
     }
 
@@ -83,6 +86,7 @@ public class UuidService {
         this.storedData.clear();
         Logger.getAnonymousLogger().info("Purged.");
         String uri = "/" + uriInfo.getPath();
+        requests = 0;
         return responseForPurge(this.color, uri.substring(0, uri.length() - 6));
     }
 
